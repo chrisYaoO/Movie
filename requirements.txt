@@ -1,0 +1,4 @@
+beautifulsoup4
+selenium
+google-auth
+google-api-python-client
