@@ -24,5 +24,11 @@ if __name__ == "__main__":
     threading.Thread(target=start_flask, daemon=True).start()
     if not wait_for_server():
         raise RuntimeError("Flask server did not start in time.")
-    window = webview.create_window("Movie Parser", "http://127.0.0.1:5000", width=1000, height=700)
+    window = webview.create_window(
+        "Movie Parser",
+        "http://127.0.0.1:5000", 
+        width=820, 
+        height=1100, 
+        resizable=False
+    )
     webview.start()
