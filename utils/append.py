@@ -1,28 +1,14 @@
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 import json
-SERVICE_ACCOUNT_FILE = "movie-491021-a3b07c0b565a.json"
-
-data = {}
-with open("spreadsheetid.txt", "r", encoding="utf-8") as f:
-    lines = [line.strip() for line in f if line.strip()]
-for i in range(0, len(lines), 2):
-    key = lines[i].rstrip(":")
-    value = lines[i + 1]
-    data[key] = value
+SERVICE_ACCOUNT_FILE = "configs/movie-491021-a3b07c0b565a.json"
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
 
 def read_id(name):
-    data = {}
-    with open("spreadsheetid.txt", "r", encoding="utf-8") as f:
-        lines = [line.strip() for line in f if line.strip()]
-    for i in range(0, len(lines), 2):
-        key = lines[i].rstrip(":")
-        value = lines[i + 1]
-        data[key] = value
+    data = json.load(open("configs/ids.json"))
     return data[name]
 
 
