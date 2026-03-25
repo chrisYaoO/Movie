@@ -6,6 +6,27 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import re
+import html
+
+def keep_english(text: str) -> str:
+    has_chinese = bool(re.search(r'[\u4e00-\u9fff]', text))
+    has_english = bool(re.search(r'[A-Za-z]', text))
+
+    if has_chinese and has_english:
+        english_parts = re.findall(r'[A-Za-z]+(?:[ -][A-Za-z]+)*', text)
+        return ' '.join(english_parts).strip()
+
+    return text
+
+def parse_url(text: str) -> str:
+    movie_id_match = re.search(r"\b(\d+)\b", text.strip())
+    if movie_id_match:
+        return f"https://movie.douban.com/subject/{movie_id_match.group(1)}/"
+
+    raise ValueError("Invalid movie id")
+    
+    
 
 def movie_info_crawler(url):
     def create_driver():
@@ -32,7 +53,10 @@ def movie_info_crawler(url):
 
 
     driver = create_driver()
-    driver.get(url)
+
+    real_url = parse_url(url)
+
+    driver.get(real_url)
 
     WebDriverWait(driver, 5).until(
         EC.presence_of_element_located(
@@ -45,9 +69,16 @@ def movie_info_crawler(url):
     if not script_tag:
         return None
 
-    data = json.loads(script_tag.get_text(strip=True))
+    # print(script_tag)
+    
+    raw_json = script_tag.get_text()
+    # Douban's ld+json may contain literal newlines/control characters
+    # inside strings, which are invalid in strict JSON parsing.
+    raw_json = re.sub(r'[\x00-\x1f]+', ' ', raw_json)
+    data = json.loads(raw_json)
 
     name = data.get("name")
+    name = html.unescape(name) if name else None
 
     director = None
     directors = data.get("director")
@@ -62,11 +93,23 @@ def movie_info_crawler(url):
     driver.quit()
     return {
         "name": name,
-        "year": year,
-        "director": director
+        "year": int(year),
+        "director": keep_english(director)
     }
 
-start = time.time()
-url = "https://movie.douban.com/subject/35010610/"
-print(movie_info_crawler(url))
-print(time.time() - start)
+if __name__ == "__main__":
+    start = time.time()
+    url = "https://movie.douban.com/subject/1291992/"
+
+
+
+    movie_info = {"sheetname": "2026",
+                "date": "2026/3/19",
+                "rating": 4.2,
+                "comments": "test comment",
+                "quality": "1080p"}
+    movie_info.update(movie_info_crawler(url))
+    print(movie_info)
+    print(time.time() - start)
+    # id = "movie/1291992&&&sdfjskdfjsdk1234"
+    # print(parse_url(id))
