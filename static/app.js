@@ -29,6 +29,17 @@ async function postData(url, data) {
     }
 }
 
+async function pingBackend() {
+    try {
+        await fetch("/api/client-ping", {
+            method: "POST",
+            keepalive: true
+        });
+    } catch (error) {
+        console.error("Heartbeat error:", error);
+    }
+}
+
 // Usage
 // const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts'; // Example API endpoint
 // const myData = {
@@ -56,6 +67,9 @@ const commentsInput = document.getElementById("comments");
 const messageBox = document.getElementById("message");
 const resultBox = document.getElementById("result");
 let parsedMovieData = null;
+
+pingBackend();
+setInterval(pingBackend, 2000);
 
 // Default date set to today using local time.
 const today = new Date();
@@ -125,7 +139,7 @@ parseBtn.addEventListener("click", async () => {
         messageBox.textContent = "Movie information loaded successfully.";
     } catch (error) {
         movieInfo.style.display = "none";
-        messageBox.textContent = "Failed to connect to the backend.";
+        messageBox.textContent = error.message || "Failed to connect to the backend.";
         console.error(error);
     }
 
@@ -190,7 +204,7 @@ submitBtn.addEventListener("click",async () => {
         console.log(response);
 
     } catch (error) {
-        messageBox.textContent = "Failed to submit.";
+        messageBox.textContent = error.message || "Failed to submit.";
         resultBox.style.display = "none";
         console.error(error);
 
