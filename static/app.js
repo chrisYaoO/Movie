@@ -51,6 +51,63 @@ async function pingBackend() {
 // postData(apiEndpoint, myData);
 
 
+async function loadData() {
+    try {
+        const response = await fetch("/api/load");
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
+    }
+}
+
+function buildFormData() {
+    const selectedQuality = qualitySelect.value;
+    const customQuality = otherQualityInput.value.trim();
+
+    return {
+        sheetname: String(currYear),
+        date: dateInput.value,
+        url: urlInput.value.trim(),
+        name: parsedMovieData?.name ?? "",
+        director: parsedMovieData?.director ?? "",
+        year: parsedMovieData?.year ?? "",
+        quality: selectedQuality === "Other" ? customQuality : selectedQuality,
+        rating: Number(ratingInput.value),
+        comments: commentsInput.value.trim(),
+    };
+}
+
+function saveDraft() {
+    const savedData = buildFormData();
+
+    fetch("/api/save", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(savedData),
+        keepalive: true
+    }).catch((error) => {
+        console.error("Save draft error:", error);
+    });
+}
+
+let saveDraftTimer = null;
+
+function scheduleDraftSave() {
+    if (saveDraftTimer !== null) {
+        clearTimeout(saveDraftTimer);
+    }
+
+    saveDraftTimer = setTimeout(() => {
+        saveDraft();
+        saveDraftTimer = null;
+    }, 400);
+}
 
 
 
@@ -70,6 +127,7 @@ let parsedMovieData = null;
 
 pingBackend();
 setInterval(pingBackend, 2000);
+
 
 // Default date set to today using local time.
 const today = new Date();
@@ -96,12 +154,20 @@ qualitySelect.addEventListener("change", () => {
     } else {
         otherInput.style.display = "none";
     }
+
+    scheduleDraftSave();
 });
 
 urlInput.addEventListener("input", () => {
     parsedMovieData = null;
     document.getElementById("movieInfo").style.display = "none";
+    scheduleDraftSave();
 });
+
+dateInput.addEventListener("input", scheduleDraftSave);
+ratingInput.addEventListener("input", scheduleDraftSave);
+otherQualityInput.addEventListener("input", scheduleDraftSave);
+commentsInput.addEventListener("input", scheduleDraftSave);
 
 // Parse URL button.
 parseBtn.addEventListener("click", async () => {
@@ -137,6 +203,7 @@ parseBtn.addEventListener("click", async () => {
         year.textContent = data.year ?? "";
         movieInfo.style.display = "block";
         messageBox.textContent = "Movie information loaded successfully.";
+        scheduleDraftSave();
     } catch (error) {
         movieInfo.style.display = "none";
         messageBox.textContent = error.message || "Failed to connect to the backend.";
@@ -147,14 +214,11 @@ parseBtn.addEventListener("click", async () => {
 });
 
 // Submit button.
-submitBtn.addEventListener("click",async () => {
-    const date = dateInput.value;
+submitBtn.addEventListener("click", async () => {
+    const submission = buildFormData();
+    const { date, url, quality, rating } = submission;
     const selectedQuality = qualitySelect.value;
     const customQuality = otherQualityInput.value.trim();
-    const quality = selectedQuality === "Other" ? customQuality : selectedQuality;
-    const rating = Number(ratingInput.value);
-    const comments = commentsInput.value.trim();
-    const url = urlInput.value.trim();
 
     if (!date) {
         messageBox.textContent = "Please select a date.";
@@ -180,23 +244,11 @@ submitBtn.addEventListener("click",async () => {
         return;
     }
 
-    const submission = {
-        sheetname: String(currYear),
-        date,
-        url,
-        name: parsedMovieData?.name ?? "",
-        director: parsedMovieData?.director ?? "",
-        year: parsedMovieData?.year ?? "",
-        quality,
-        rating,
-        comments,
-    };
-
     const apiEndpoint = "/api/submit";
     messageBox.textContent = "Submitting...";
     resultBox.textContent = JSON.stringify(submission, null, 2);
     resultBox.style.display = "block";
-    
+
     try {
         const response = await postData(apiEndpoint, submission);
         messageBox.textContent = "Submitted";
@@ -209,6 +261,56 @@ submitBtn.addEventListener("click",async () => {
         console.error(error);
 
     }
-    
+
     console.log(submission);
+});
+
+window.addEventListener("DOMContentLoaded", async () => {
+    let data = {};
+
+    try {
+        data = await loadData();
+        console.log(data);
+    } catch (error) {
+        messageBox.textContent = error.message || "Failed to load data.";
+        console.error(error);
+        return;
+    }
+
+    dateInput.value = data.date ?? "";
+    urlInput.value = data.url ?? "";
+    ratingInput.value = data.rating ?? 4.0;
+    commentsInput.value = data.comments ?? "";
+
+    const loadedQuality = data.quality ?? "";
+    const isPresetQuality = Array.from(qualitySelect.options).some(
+        (option) => option.value === loadedQuality
+    );
+    qualitySelect.value = isPresetQuality ? loadedQuality : "Other";
+    otherQualityInput.value = isPresetQuality ? "" : loadedQuality;
+    otherInput.style.display = qualitySelect.value === "Other" ? "block" : "none";
+
+    document.getElementById("name").textContent = data.name ?? "";
+    document.getElementById("director").textContent = data.director ?? "";
+    document.getElementById("year").textContent = data.year ?? "";
+
+    parsedMovieData = {
+        name: data.name ?? "",
+        director: data.director ?? "",
+        year: data.year ?? "",
+    };
+
+    if (data.name) {
+        document.getElementById("movieInfo").style.display = "block";
+    }
+    else {
+        document.getElementById("movieInfo").style.display = "none";
+    }
+});
+
+window.addEventListener("pagehide", saveDraft);
+window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+        saveDraft();
+    }
 });
