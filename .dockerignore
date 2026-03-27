@@ -1,0 +1,8 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+configs/movie-491021-a3b07c0b565a.json

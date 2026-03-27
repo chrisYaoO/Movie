@@ -1,11 +1,15 @@
-async function postData(url, data) {
+const DRAFT_STORAGE_KEY = "movie-form-draft";
+const isDesktopMode = new URLSearchParams(window.location.search).get("desktop") === "1";
+
+async function postData(url, data, keepalive = false) {
     try {
         const response = await fetch(url, {
-            method: 'POST', // *METHOD* set to POST
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json' // *HEADERS* tell the server how to interpret the body
+                "Content-Type": "application/json"
             },
-            body: JSON.stringify(data) // *BODY* data is stringified
+            body: JSON.stringify(data),
+            keepalive
         });
 
         let responseData = null;
@@ -16,15 +20,15 @@ async function postData(url, data) {
         }
 
         if (!response.ok) {
-            const errorMessage = responseData?.message || `HTTP error! Status: ${response.status}`;
+            const errorMessage =
+                responseData?.message || `HTTP error! Status: ${response.status}`;
             throw new Error(errorMessage);
         }
 
-        console.log('responseData:', responseData);
+        console.log("responseData:", responseData);
         return responseData;
-
     } catch (error) {
-        console.error('Fetch error:', error); // *ERROR HANDLING*
+        console.error("Fetch error:", error);
         throw error;
     }
 }
@@ -40,18 +44,17 @@ async function pingBackend() {
     }
 }
 
-// Usage
-// const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts'; // Example API endpoint
-// const myData = {
-//   title: 'My new post',
-//   body: 'This is the content of my post.',
-//   userId: 1
-// };
+function loadLocalDraft() {
+    try {
+        const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
+        return draft ? JSON.parse(draft) : {};
+    } catch (error) {
+        console.error("Load local draft error:", error);
+        return {};
+    }
+}
 
-// postData(apiEndpoint, myData);
-
-
-async function loadData() {
+async function loadServerDraft() {
     try {
         const response = await fetch("/api/load");
         if (!response.ok) {
@@ -59,9 +62,15 @@ async function loadData() {
         }
         return await response.json();
     } catch (error) {
-        console.error('Fetch error:', error);
-        throw error;
+        console.error("Load server draft error:", error);
+        return {};
     }
+}
+
+function hasDraftData(data) {
+    return Boolean(
+        data && Object.values(data).some((value) => value !== "" && value !== null && value !== undefined)
+    );
 }
 
 function buildFormData() {
@@ -77,23 +86,76 @@ function buildFormData() {
         year: parsedMovieData?.year ?? "",
         quality: selectedQuality === "Other" ? customQuality : selectedQuality,
         rating: Number(ratingInput.value),
-        comments: commentsInput.value.trim(),
+        comments: commentsInput.value.trim()
     };
 }
 
-function saveDraft() {
-    const savedData = buildFormData();
+async function saveServerDraft(data) {
+    try {
+        await postData("/api/save", data, true);
+    } catch (error) {
+        console.error("Save server draft error:", error);
+    }
+}
 
-    fetch("/api/save", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(savedData),
-        keepalive: true
-    }).catch((error) => {
-        console.error("Save draft error:", error);
-    });
+function saveLocalDraft(data) {
+    try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+        console.error("Save local draft error:", error);
+    }
+}
+
+function saveDraft() {
+    const draft = buildFormData();
+    saveLocalDraft(draft);
+    if (isDesktopMode) {
+        void saveServerDraft(draft);
+    }
+}
+
+function clearLocalDraft() {
+    try {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch (error) {
+        console.error("Clear local draft error:", error);
+    }
+}
+
+function clearDraft() {
+    clearLocalDraft();
+    if (isDesktopMode) {
+        void saveServerDraft({});
+    }
+}
+
+function applyDraft(data) {
+    dateInput.value = data.date || dateInput.value;
+    urlInput.value = data.url ?? "";
+    ratingInput.value = data.rating ?? 4.0;
+    commentsInput.value = data.comments ?? "";
+
+    const loadedQuality = data.quality ?? "1080p";
+    const isPresetQuality = Array.from(qualitySelect.options).some(
+        (option) => option.value === loadedQuality
+    );
+    qualitySelect.value = isPresetQuality ? loadedQuality : "Other";
+    otherQualityInput.value = isPresetQuality ? "" : loadedQuality;
+    otherInput.style.display = qualitySelect.value === "Other" ? "block" : "none";
+
+    name.textContent = data.name ?? "";
+    director.textContent = data.director ?? "";
+    year.textContent = data.year ?? "";
+
+    parsedMovieData = data.name
+        ? {
+            name: data.name ?? "",
+            director: data.director ?? "",
+            year: data.year ?? ""
+        }
+        : null;
+
+    movieInfo.style.display = data.name ? "block" : "none";
 }
 
 let saveDraftTimer = null;
@@ -109,9 +171,6 @@ function scheduleDraftSave() {
     }, 400);
 }
 
-
-
-
 const qualitySelect = document.getElementById("quality");
 const otherInput = document.getElementById("otherInput");
 const dateInput = document.getElementById("date");
@@ -123,20 +182,22 @@ const otherQualityInput = document.getElementById("other");
 const commentsInput = document.getElementById("comments");
 const messageBox = document.getElementById("message");
 const resultBox = document.getElementById("result");
+const movieInfo = document.getElementById("movieInfo");
+const name = document.getElementById("name");
+const director = document.getElementById("director");
+const year = document.getElementById("year");
 let parsedMovieData = null;
 
 pingBackend();
 setInterval(pingBackend, 2000);
 
-
-// Default date set to today using local time.
 const today = new Date();
 const currYear = today.getFullYear();
 const month = String(today.getMonth() + 1).padStart(2, "0");
 const day = String(today.getDate()).padStart(2, "0");
 dateInput.value = `${currYear}-${month}-${day}`;
+ratingInput.value = 4.0;
 
-// Rating input limitation.
 ratingInput.addEventListener("input", () => {
     const rating = parseFloat(ratingInput.value);
     if (rating > 5) {
@@ -145,9 +206,7 @@ ratingInput.addEventListener("input", () => {
         ratingInput.value = 0;
     }
 });
-ratingInput.value = 4.0;
 
-// Show custom quality input when needed.
 qualitySelect.addEventListener("change", () => {
     if (qualitySelect.value === "Other") {
         otherInput.style.display = "block";
@@ -160,7 +219,10 @@ qualitySelect.addEventListener("change", () => {
 
 urlInput.addEventListener("input", () => {
     parsedMovieData = null;
-    document.getElementById("movieInfo").style.display = "none";
+    movieInfo.style.display = "none";
+    name.textContent = "";
+    director.textContent = "";
+    year.textContent = "";
     scheduleDraftSave();
 });
 
@@ -169,13 +231,8 @@ ratingInput.addEventListener("input", scheduleDraftSave);
 otherQualityInput.addEventListener("input", scheduleDraftSave);
 commentsInput.addEventListener("input", scheduleDraftSave);
 
-// Parse URL button.
 parseBtn.addEventListener("click", async () => {
     const url = urlInput.value.trim();
-    const movieInfo = document.getElementById("movieInfo");
-    const name = document.getElementById("name");
-    const director = document.getElementById("director");
-    const year = document.getElementById("year");
 
     if (!url) {
         messageBox.textContent = "Please enter a movie URL before parsing.";
@@ -183,19 +240,15 @@ parseBtn.addEventListener("click", async () => {
         return;
     }
 
-    const apiEndpoint = "/api/movie";
-    const myData = {
-        title: 'parse url',
-        url: url,
-        userId: 1
-    };
-
     messageBox.textContent = "Parsing movie information...";
     resultBox.style.display = "none";
 
     try {
-        const data = await postData(apiEndpoint, myData);
-        console.log("returned data:", data);
+        const data = await postData("/api/movie", {
+            title: "parse url",
+            url,
+            userId: 1
+        });
         parsedMovieData = data;
 
         name.textContent = data.name ?? "";
@@ -209,14 +262,11 @@ parseBtn.addEventListener("click", async () => {
         messageBox.textContent = error.message || "Failed to connect to the backend.";
         console.error(error);
     }
-
-    // console.log(url);
 });
 
-// Submit button.
 submitBtn.addEventListener("click", async () => {
     const submission = buildFormData();
-    const { date, url, quality, rating } = submission;
+    const { date, url, rating } = submission;
     const selectedQuality = qualitySelect.value;
     const customQuality = otherQualityInput.value.trim();
 
@@ -244,68 +294,33 @@ submitBtn.addEventListener("click", async () => {
         return;
     }
 
-    const apiEndpoint = "/api/submit";
     messageBox.textContent = "Submitting...";
     resultBox.textContent = JSON.stringify(submission, null, 2);
     resultBox.style.display = "block";
 
     try {
-        const response = await postData(apiEndpoint, submission);
+        await postData("/api/submit", submission);
         messageBox.textContent = "Submitted";
         resultBox.style.display = "none";
-        console.log(response);
-
+        clearDraft();
     } catch (error) {
         messageBox.textContent = error.message || "Failed to submit.";
         resultBox.style.display = "none";
         console.error(error);
-
     }
-
-    console.log(submission);
 });
 
 window.addEventListener("DOMContentLoaded", async () => {
-    let data = {};
+    let data = loadLocalDraft();
 
-    try {
-        data = await loadData();
-        console.log(data);
-    } catch (error) {
-        messageBox.textContent = error.message || "Failed to load data.";
-        console.error(error);
-        return;
+    if (!hasDraftData(data) && isDesktopMode) {
+        data = await loadServerDraft();
+        if (hasDraftData(data)) {
+            saveLocalDraft(data);
+        }
     }
 
-    dateInput.value = data.date ?? "";
-    urlInput.value = data.url ?? "";
-    ratingInput.value = data.rating ?? 4.0;
-    commentsInput.value = data.comments ?? "";
-
-    const loadedQuality = data.quality ?? "";
-    const isPresetQuality = Array.from(qualitySelect.options).some(
-        (option) => option.value === loadedQuality
-    );
-    qualitySelect.value = isPresetQuality ? loadedQuality : "Other";
-    otherQualityInput.value = isPresetQuality ? "" : loadedQuality;
-    otherInput.style.display = qualitySelect.value === "Other" ? "block" : "none";
-
-    document.getElementById("name").textContent = data.name ?? "";
-    document.getElementById("director").textContent = data.director ?? "";
-    document.getElementById("year").textContent = data.year ?? "";
-
-    parsedMovieData = {
-        name: data.name ?? "",
-        director: data.director ?? "",
-        year: data.year ?? "",
-    };
-
-    if (data.name) {
-        document.getElementById("movieInfo").style.display = "block";
-    }
-    else {
-        document.getElementById("movieInfo").style.display = "none";
-    }
+    applyDraft(data);
 });
 
 window.addEventListener("pagehide", saveDraft);

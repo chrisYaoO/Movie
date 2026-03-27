@@ -1,7 +1,9 @@
 import socket
 import threading
 import time
+
 import webview
+
 from app import app
 
 
@@ -26,9 +28,9 @@ if __name__ == "__main__":
         raise RuntimeError("Flask server did not start in time.")
     window = webview.create_window(
         "Movie Parser",
-        "http://127.0.0.1:5000", 
-        width=820, 
-        height=1100, 
-        resizable=False
+        "http://127.0.0.1:5000/?desktop=1",
+        width=820,
+        height=1100,
+        resizable=False,
     )
     webview.start()

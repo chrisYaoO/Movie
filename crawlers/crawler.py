@@ -1,7 +1,9 @@
 import json
+import os
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -31,6 +33,10 @@ def parse_url(text: str) -> str:
 def movie_info_crawler(url):
     def create_driver():
         options = Options()
+        chrome_bin = os.getenv("CHROME_BIN")
+        if chrome_bin:
+            options.binary_location = chrome_bin
+
         options.add_argument("--headless=new")
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--no-sandbox")
@@ -47,7 +53,11 @@ def movie_info_crawler(url):
         }
         options.add_experimental_option("prefs", prefs)
 
-        driver = webdriver.Chrome(options=options)
+        chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
+        if chromedriver_path:
+            driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
+        else:
+            driver = webdriver.Chrome(options=options)
         driver.set_page_load_timeout(20)
         return driver
 
