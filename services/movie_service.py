@@ -60,11 +60,11 @@ def submit_movie_service(submission):
 
         submission.update(movie_info)
 
-    submission["sheetname"] =  "Sheet1"
+    # submission["sheetname"] =  "Sheet1"
 
     try:
-        response = append_row(submission, status="test")
-        # response = append_row(submission, status="movie")
+        # response = append_row(submission, status="test")
+        response = append_row(submission, status="movie")
 
     except ValueError as exc:
         return ({"message": str(exc)}), 400
