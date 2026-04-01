@@ -1,5 +1,12 @@
 const DRAFT_STORAGE_KEY = "movie-form-draft";
 const isDesktopMode = new URLSearchParams(window.location.search).get("desktop") === "1";
+const today = new Date();
+const currYear = today.getFullYear();
+const month = String(today.getMonth() + 1).padStart(2, "0");
+const day = String(today.getDate()).padStart(2, "0");
+const DEFAULT_DATE = `${currYear}-${month}-${day}`;
+const DEFAULT_RATING = 4.0;
+const DEFAULT_QUALITY = "1080p";
 
 async function postData(url, data, keepalive = false) {
     try {
@@ -73,6 +80,37 @@ function hasDraftData(data) {
     );
 }
 
+function getDefaultFormData() {
+    return {
+        sheetname: String(currYear),
+        date: DEFAULT_DATE,
+        url: "",
+        name: "",
+        director: "",
+        year: "",
+        image: "",
+        quality: DEFAULT_QUALITY,
+        rating: DEFAULT_RATING,
+        comments: ""
+    };
+}
+
+function isDefaultDraft(data) {
+    const defaults = getDefaultFormData();
+
+    return (
+        (data?.date ?? defaults.date) === defaults.date &&
+        (data?.url ?? "") === defaults.url &&
+        (data?.name ?? "") === defaults.name &&
+        (data?.director ?? "") === defaults.director &&
+        String(data?.year ?? "") === String(defaults.year) &&
+        (data?.image ?? "") === defaults.image &&
+        (data?.quality ?? defaults.quality) === defaults.quality &&
+        Number(data?.rating ?? defaults.rating) === defaults.rating &&
+        (data?.comments ?? "") === defaults.comments
+    );
+}
+
 function buildFormData() {
     const selectedQuality = qualitySelect.value;
     const customQuality = otherQualityInput.value.trim();
@@ -109,6 +147,10 @@ function saveLocalDraft(data) {
 
 function saveDraft() {
     const draft = buildFormData();
+    if (isDefaultDraft(draft)) {
+        void clearDraft();
+        return;
+    }
     saveLocalDraft(draft);
     if (isDesktopMode) {
         void saveServerDraft(draft);
@@ -126,17 +168,20 @@ function clearLocalDraft() {
 function clearDraft() {
     clearLocalDraft();
     if (isDesktopMode) {
-        void saveServerDraft({});
+        return saveServerDraft({});
     }
+    return Promise.resolve();
 }
 
 function applyDraft(data) {
-    dateInput.value = data.date || dateInput.value;
-    urlInput.value = data.url ?? "";
-    ratingInput.value = data.rating ?? 4.0;
-    commentsInput.value = data.comments ?? "";
+    const draft = hasDraftData(data) ? data : getDefaultFormData();
 
-    const loadedQuality = data.quality ?? "1080p";
+    dateInput.value = draft.date || DEFAULT_DATE;
+    urlInput.value = draft.url ?? "";
+    ratingInput.value = draft.rating ?? DEFAULT_RATING;
+    commentsInput.value = draft.comments ?? "";
+
+    const loadedQuality = draft.quality ?? DEFAULT_QUALITY;
     const isPresetQuality = Array.from(qualitySelect.options).some(
         (option) => option.value === loadedQuality
     );
@@ -144,20 +189,41 @@ function applyDraft(data) {
     otherQualityInput.value = isPresetQuality ? "" : loadedQuality;
     otherInput.style.display = qualitySelect.value === "Other" ? "block" : "none";
 
-    name.textContent = data.name ?? "";
-    director.textContent = data.director ?? "";
-    year.textContent = data.year ?? "";
+    name.textContent = draft.name ?? "";
+    director.textContent = draft.director ?? "";
+    year.textContent = draft.year ?? "";
 
-    parsedMovieData = data.name
+    parsedMovieData = draft.name
         ? {
-            name: data.name ?? "",
-            director: data.director ?? "",
-            year: data.year ?? "",
-            image: data.image ?? ""
+            name: draft.name ?? "",
+            director: draft.director ?? "",
+            year: draft.year ?? "",
+            image: draft.image ?? ""
         }
         : null;
 
-    movieInfo.style.display = data.name ? "block" : "none";
+    movieInfo.style.display = draft.name ? "block" : "none";
+}
+
+function resetFormToDefaults() {
+    if (saveDraftTimer !== null) {
+        clearTimeout(saveDraftTimer);
+        saveDraftTimer = null;
+    }
+
+    parsedMovieData = null;
+    dateInput.value = DEFAULT_DATE;
+    urlInput.value = "";
+    qualitySelect.value = DEFAULT_QUALITY;
+    otherQualityInput.value = "";
+    otherInput.style.display = "none";
+    ratingInput.value = DEFAULT_RATING;
+    commentsInput.value = "";
+    name.textContent = "";
+    director.textContent = "";
+    year.textContent = "";
+    movieInfo.style.display = "none";
+    resultBox.style.display = "none";
 }
 
 let saveDraftTimer = null;
@@ -192,13 +258,8 @@ let parsedMovieData = null;
 
 pingBackend();
 setInterval(pingBackend, 2000);
-
-const today = new Date();
-const currYear = today.getFullYear();
-const month = String(today.getMonth() + 1).padStart(2, "0");
-const day = String(today.getDate()).padStart(2, "0");
-dateInput.value = `${currYear}-${month}-${day}`;
-ratingInput.value = 4.0;
+dateInput.value = DEFAULT_DATE;
+ratingInput.value = DEFAULT_RATING;
 
 ratingInput.addEventListener("input", () => {
     const rating = parseFloat(ratingInput.value);
@@ -302,9 +363,9 @@ submitBtn.addEventListener("click", async () => {
 
     try {
         await postData("/api/submit", submission);
+        resetFormToDefaults();
+        await clearDraft();
         messageBox.textContent = "Submitted";
-        resultBox.style.display = "none";
-        clearDraft();
     } catch (error) {
         messageBox.textContent = error.message || "Failed to submit.";
         resultBox.style.display = "none";
