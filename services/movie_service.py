@@ -1,5 +1,6 @@
 from crawlers.crawler import *
-from utils.append import *
+from utils.google_sheets import *
+import threading
 
 
 def get_movie_info_service(data):
@@ -21,6 +22,12 @@ def get_movie_info_service(data):
     if response is None:
         return ({"message": "Movie information was not found."}), 404
 
+    # thread = threading.Thread(
+    #     target=image_crawler, args=(parse_movie_url(url), response["image"]), daemon=True
+    # )
+    # thread.start()
+
+    
     response.update({"message": "success"})
     return (response), 200
 
@@ -47,6 +54,7 @@ def submit_movie_service(submission):
         not submission.get("name")
         or not submission.get("director")
         or not submission.get("year")
+        or not submission.get("image")
     ):
         try:
             movie_info = movie_info_crawler(url)
