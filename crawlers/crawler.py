@@ -45,14 +45,21 @@ def create_driver():
     return driver
 
 
-def keep_english(text: str) -> str:
-    has_chinese = bool(re.search(r"[\u4e00-\u9fff]", text))
-    has_english = bool(re.search(r"[A-Za-z]", text))
-
-    if has_chinese and has_english:
-        english_parts = re.findall(r"[A-Za-z]+(?:[ -][A-Za-z]+)*", text)
-        return " ".join(english_parts).strip()
-
+def keep_origin(text: str) -> str:
+    match = re.search(r'[a-zA-Z]', text)
+    
+    if match:
+        split_index = match.start()
+        
+        chinese_part = text[:split_index].strip()
+        english_part = text[split_index:].strip()
+        
+        if '·' in chinese_part or '.' in chinese_part:
+            return english_part
+        else:
+            return chinese_part
+            
+    # 如果没有找到英文字母，直接返回原字符串
     return text
 
 
@@ -107,7 +114,7 @@ def movie_info_crawler(url):
         return {
             "name": name,
             "year": int(year),
-            "director": keep_english(director),
+            "director": keep_origin(director),
             "image": image_id,
         }
     finally:
