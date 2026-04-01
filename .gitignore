@@ -1,3 +1,5 @@
 /.venv
 /__pycache__
 /configs
+/images
+/templates/movie_wechat.html

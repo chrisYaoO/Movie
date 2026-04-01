@@ -84,6 +84,7 @@ function buildFormData() {
         name: parsedMovieData?.name ?? "",
         director: parsedMovieData?.director ?? "",
         year: parsedMovieData?.year ?? "",
+        image: parsedMovieData?.image ?? "",
         quality: selectedQuality === "Other" ? customQuality : selectedQuality,
         rating: Number(ratingInput.value),
         comments: commentsInput.value.trim()
@@ -151,7 +152,8 @@ function applyDraft(data) {
         ? {
             name: data.name ?? "",
             director: data.director ?? "",
-            year: data.year ?? ""
+            year: data.year ?? "",
+            image: data.image ?? ""
         }
         : null;
 

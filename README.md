@@ -1,21 +1,17 @@
-# Movie Parser
+# Movie
 
-Movie Parser is a lightweight Flask application for collecting movie entries, parsing metadata from Douban, and appending the final record to Google Sheets. It supports both browser-based usage and a small desktop wrapper powered by `pywebview`.
+A small Python app for managing movie logs from Douban.
 
-## Features
+It currently supports two workflows:
 
-- Parse movie title, director, and release year from a Douban movie URL or subject ID
-- Submit movie records to a target Google Sheet
-- Save drafts locally and, in desktop mode, persist them on the server
-- Run as a standard web app or as a desktop-style local application
-- Deploy with Docker and Gunicorn
+- Web app: parse movie info from a Douban subject ID/URL and append the result to Google Sheets
+- WeChat script: read movie records from Google Sheets, build an article page, upload images, and save a draft to a WeChat Official Account
 
-## Tech Stack
+## Stack
 
-- Python 3.11
+- Python
 - Flask
-- Selenium + Chromium
-- Beautiful Soup
+- Selenium
 - Google Sheets API
 - pywebview
 
@@ -23,90 +19,89 @@ Movie Parser is a lightweight Flask application for collecting movie entries, pa
 
 ```text
 .
-|-- app.py                  # Flask app entry point
-|-- desktop.py              # Desktop launcher
+|-- app.py                  # Flask entry
+|-- desktop.py              # Desktop wrapper
+|-- wechat.py               # WeChat draft workflow
 |-- routes/                 # HTTP routes
-|-- services/               # Business logic and draft storage
-|-- crawlers/               # Douban parsing logic
-|-- utils/                  # Google Sheets append helper
-|-- templates/              # HTML templates
+|-- services/               # Business logic
+|-- crawlers/               # Douban crawling
+|-- utils/                  # Google Sheets helpers
+|-- templates/              # Web and article templates
 |-- static/                 # Frontend assets
-|-- configs/                # Local config and credential files
-`-- Dockerfile              # Container deployment
+`-- configs/                # Local config files
 ```
 
-## Requirements
+## Setup
 
-- Python 3.11+
-- Google Chrome / Chromium
-- ChromeDriver compatible with the installed browser
-- A Google service account with access to the target spreadsheet
-
-## Installation
+1. Create and activate a virtual environment.
+2. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Configuration
+3. Make sure Chrome/Chromium and a matching ChromeDriver are available.
+4. Put local config files in `configs/`.
 
-The application supports environment variables for deployment and secrets management.
+## Config
 
-| Variable | Description | Default |
-| --- | --- | --- |
-| `HOST` | Flask bind host in server mode | `0.0.0.0` |
-| `PORT` | Flask bind port | `5000` |
-| `APP_RUN_MODE` | Run mode: `server` or `desktop` | `server` |
-| `DRAFT_DATA_FILE` | Draft persistence file path | `configs/data.json` |
-| `CHROME_BIN` | Path to Chrome/Chromium binary | auto/default |
-| `CHROMEDRIVER_PATH` | Path to ChromeDriver | auto/default |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | Raw service account JSON string | not set |
-| `GOOGLE_SERVICE_ACCOUNT_FILE` | Path to service account JSON file | `configs/movie-491021-a3b07c0b565a.json` |
-| `SPREADSHEET_IDS_JSON` | JSON mapping of spreadsheet IDs | not set |
+This project reads local credentials from `configs/ids.json` by default.
 
-If `SPREADSHEET_IDS_JSON` is not provided, the app reads spreadsheet IDs from `configs/ids.json`.
+Typical values used in the current code:
 
-## Running the App
+- Google Sheets IDs
+- WeChat `AppID` / `AppSecret`
+- Local draft data file at `configs/data.json`
+- Google service account JSON file in `configs/`
 
-### Web Mode
+Optional environment variables:
+
+- `HOST`
+- `PORT`
+- `APP_RUN_MODE`
+- `DRAFT_DATA_FILE`
+- `CHROME_BIN`
+- `CHROMEDRIVER_PATH`
+- `GOOGLE_SERVICE_ACCOUNT_JSON`
+- `GOOGLE_SERVICE_ACCOUNT_FILE`
+- `SPREADSHEET_IDS_JSON`
+
+## Run
+
+Start the web app:
 
 ```bash
 python app.py
 ```
 
-Then open `http://127.0.0.1:5000`.
+Open `http://127.0.0.1:5000`.
 
-### Desktop Mode
+Start the desktop wrapper:
 
 ```bash
 python desktop.py
 ```
 
-This starts the Flask backend locally and opens the UI inside a desktop window.
-
-## Docker
-
-Build and run:
+Run the WeChat draft flow:
 
 ```bash
-docker build -t movie-parser .
-docker run -p 8000:8000 movie-parser
+python wechat.py
 ```
 
-The container uses Gunicorn and listens on port `8000`.
+The script will prompt for a digest, read movie data from Google Sheets, generate article HTML, upload images, and create a WeChat draft.
 
-## API Overview
+## API
 
-- `GET /` : Main application page
-- `GET /health` : Health check
-- `POST /api/movie` : Parse movie metadata from a Douban URL or subject ID
-- `POST /api/submit` : Submit a movie record to Google Sheets
-- `GET /api/load` : Load saved draft data
-- `POST /api/save` : Save draft data
-- `POST /api/client-ping` : Keep desktop sessions alive
+- `GET /` main page
+- `GET /health` health check
+- `POST /api/movie` fetch movie info from Douban
+- `POST /api/submit` append a movie row to Google Sheets
+- `GET /api/load` load local draft data
+- `POST /api/save` save local draft data
+- `POST /api/client-ping` desktop keep-alive
 
 ## Notes
 
-- The parser is designed for Douban movie pages.
-- Google Sheets must already contain the target sheet and table structure expected by the app.
-- Credentials in `configs/` should be treated as sensitive and should not be committed to public repositories.
+- The crawler is built for Douban movie pages.
+- `wechat.py` depends on valid WeChat Official Account credentials.
+- Files in `configs/` should be treated as private.
