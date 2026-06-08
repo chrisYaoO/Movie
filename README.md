@@ -90,6 +90,16 @@ python wechat.py
 
 The script will prompt for a digest, read movie data from Google Sheets, generate article HTML, upload images, and create a WeChat draft.
 
+## Tests
+
+Run the WeChat draft characterization tests:
+
+```bash
+python -m unittest discover -v
+```
+
+The tests use fake Google Sheets and WeChat API responses. They do not upload images or create a real draft.
+
 ## Workflows
 
 ### Web App Flow
