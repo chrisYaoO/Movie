@@ -27,9 +27,10 @@ async function postData(url, data, keepalive = false) {
         }
 
         if (!response.ok) {
-            const errorMessage =
+            const baseMessage =
                 responseData?.message || `HTTP error! Status: ${response.status}`;
-            throw new Error(errorMessage);
+            const detail = responseData?.error ? ` Details: ${responseData.error}` : "";
+            throw new Error(`${baseMessage}${detail}`);
         }
 
         console.log("responseData:", responseData);

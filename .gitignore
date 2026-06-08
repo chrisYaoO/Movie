@@ -1,5 +1,6 @@
 /.venv
-/__pycache__
+__pycache__/
+*.py[cod]
 /configs
 /images
 /templates/movie_wechat.html
