@@ -8,6 +8,10 @@ from services.wechat_client import DraftCreationResultUnknown, WeChatApiError
 from wechat import main
 
 
+class Result:
+    media_id = "draft-media-id"
+
+
 class WeChatCliTest(unittest.TestCase):
     @patch("wechat.input", return_value="digest")
     @patch("wechat.prompt_draft_period", side_effect=ValueError("Invalid Draft Period"))
@@ -58,6 +62,27 @@ class WeChatCliTest(unittest.TestCase):
             main()
 
         self.assertIn("Check WeChat before rerunning", output.getvalue())
+
+    @patch("wechat.prompt_draft_period", return_value=DraftPeriod("2026", 6, 6))
+    @patch("wechat.input", return_value="digest")
+    @patch("wechat.run_draft", return_value=Result())
+    def test_progress_callback_is_printed_in_command_window(
+        self,
+        run_draft,
+        input_mock,
+        prompt_draft_period,
+    ):
+        def emit_progress(period, digest, progress):
+            progress("[1/2] Movie A: downloading poster...")
+            return Result()
+
+        run_draft.side_effect = emit_progress
+        output = io.StringIO()
+        with redirect_stdout(output):
+            main()
+
+        self.assertIn("[1/2] Movie A: downloading poster...", output.getvalue())
+        self.assertIn("Completed in", output.getvalue())
 
 
 if __name__ == "__main__":

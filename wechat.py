@@ -4,12 +4,16 @@ from utils.google_sheets import prompt_draft_period
 import time
 
 
+def show_progress(message):
+    print(message, flush=True)
+
+
 def main():
     start = time.time()
     digest = input("digest: ")
     try:
         period = prompt_draft_period()
-        result = run_draft(period, digest)
+        result = run_draft(period, digest, progress=show_progress)
     except ValueError as error:
         print(error)
         return
@@ -20,8 +24,7 @@ def main():
         print(error)
         return
 
-    print(result.media_id)
-    print(time.time() - start)
+    print(f"Completed in {time.time() - start:.1f}s", flush=True)
 
 
 if __name__ == "__main__":

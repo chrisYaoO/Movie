@@ -45,6 +45,17 @@ python wechat.py
 
 The Windows launcher `run_wechat.vbs` starts the same command.
 
+The command window reports progress for the complete Draft Run, including the
+current movie while its poster is downloaded and uploaded:
+
+```text
+Selected 4 movies.
+[1/4] Movie Name: downloading poster...
+[1/4] Movie Name: uploading poster to WeChat...
+Writing Preview to outputs\movie_wechat.html...
+Creating WeChat draft...
+```
+
 If a poster upload fails, no draft is created. Rerun to upload all posters from
 the beginning. If draft creation times out, inspect the WeChat Official Account
 backend before rerunning because the result is unknown.

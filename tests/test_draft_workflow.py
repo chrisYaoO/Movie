@@ -94,6 +94,27 @@ class DraftWorkflowTest(unittest.TestCase):
         self.assertEqual(render_calls, [])
         self.assertEqual(client.drafts, [])
 
+    def test_progress_reports_current_movie_and_major_stages(self):
+        progress = []
+        workflow = DraftWorkflow(
+            client=FakeWeChatClient(),
+            sheet_reader=lambda status, year: (self.headers, self.rows),
+            poster_loader=lambda movie_id, image_id: b"poster",
+            renderer=lambda movies, preview_path: "<p>preview</p>",
+            progress=progress.append,
+        )
+
+        workflow.run(DraftPeriod("2026", 6, 6), "digest")
+
+        self.assertEqual(progress[0], "Reading Google Sheets for 2026 6月观影...")
+        self.assertIn("Selected 2 movies.", progress)
+        self.assertIn("[1/2] Movie A: downloading poster...", progress)
+        self.assertIn("[1/2] Movie A: uploading poster to WeChat...", progress)
+        self.assertIn("[2/2] Movie B: poster uploaded.", progress)
+        self.assertIn("Writing Preview to outputs\\movie_wechat.html...", progress)
+        self.assertIn("Creating WeChat draft...", progress)
+        self.assertEqual(progress[-1], "Draft created: draft-media-id")
+
     def test_named_digest_rule_preserves_nonempty_digest(self):
         self.assertEqual(normalize_digest("digest"), "digest")
         self.assertEqual(normalize_digest(""), " ")
