@@ -122,6 +122,6 @@ images to WeChat, renders article HTML, and creates one WeChat draft.
 - [x] Confirm `outputs/movie_wechat.html` was generated.
 - [x] Run all automated tests again after real validation.
 - [ ] Confirm the stable baseline remains runnable.
-- [ ] Delete the unrelated Web App workflow in a separate commit.
+- [x] Delete the unrelated Web App workflow in a separate commit.
 - [x] Update README usage and recovery instructions.
 - [ ] Merge only after final approval.

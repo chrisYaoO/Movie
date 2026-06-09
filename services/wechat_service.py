@@ -1,5 +1,5 @@
-from crawlers.crawler import image_crawler
 from services.draft_workflow import render_preview
+from services.poster_loader import load_poster
 from services.wechat_client import WeChatClient, WeChatConfiguration
 
 
@@ -28,7 +28,7 @@ def upload_images(movie_list, client=None):
     for movie in movie_list:
         movie_id = movie["movie_id"]
 
-        png_image = image_crawler(movie_id, movie["image_id"])
+        png_image = load_poster(movie_id, movie["image_id"])
         movie["image_url"] = client.upload_image(f"{movie_id}.png", png_image)
         print("Image uploaded for ", movie["name"])
 

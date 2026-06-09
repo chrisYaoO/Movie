@@ -4,8 +4,8 @@ from typing import Callable, Sequence
 
 from jinja2 import Template
 
-from crawlers.crawler import image_crawler
 from services.draft_selection import DraftMovie, DraftPeriod, select_draft_movies
+from services.poster_loader import load_poster
 from services.wechat_client import WeChatClient, WeChatConfiguration
 from utils.google_sheets import read_draft_sheet
 
@@ -43,7 +43,7 @@ class DraftWorkflow:
         self,
         client: WeChatClient,
         sheet_reader: Callable = read_draft_sheet,
-        poster_loader: Callable = image_crawler,
+        poster_loader: Callable = load_poster,
         renderer: Callable = render_preview,
         preview_path: Path = DEFAULT_PREVIEW_PATH,
     ):

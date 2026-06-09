@@ -121,7 +121,7 @@ class WechatUploadCharacterizationTest(unittest.TestCase):
         self.assertIn("2026 6月观影".encode("utf-8"), payload)
 
     @patch("services.wechat_client.requests.post")
-    @patch("services.wechat_service.image_crawler", return_value=b"poster-bytes")
+    @patch("services.wechat_service.load_poster", return_value=b"poster-bytes")
     @patch("services.wechat_service.get_access_token", return_value="access-token")
     def test_upload_images_adds_wechat_image_url_to_each_movie(
         self,
