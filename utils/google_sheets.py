@@ -1,10 +1,9 @@
 import json
 import os
-from datetime import date
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
-import re
 from crawlers.crawler import parse_movie_url
+from services.draft_selection import split_name
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_SERVICE_ACCOUNT_FILE = os.path.join(
@@ -121,32 +120,8 @@ def valid_month(month):
 
 
 def get_year_month():
-
-    year, month = user_input()
-    today = date.today()
-
-    if year is None:
-        
-        curr_year = str(today.year)
-    else:
-        curr_year = str(year)
-
-    if month is None:
-        month_start, month_end = today.month, today.month
-    elif len(month) == 1:
-        if valid_month(month[0]):
-            month_start, month_end = month[0], month[0]
-        else:
-            raise ValueError(f"Invalid month: {month[0]}")
-    elif len(month) == 2:
-        if valid_month(month[0]) and valid_month(month[1]):
-            month_start, month_end = month[0], month[1]
-        else:
-            raise ValueError(f"Invalid month: {month}")
-    else:
-        raise ValueError(f"Invalid month: {month}")
-
-    return curr_year, month_start, month_end
+    period = prompt_draft_period()
+    return period.year, period.month_start, period.month_end
 
 
 def get_title(curr_year, month_start, month_end):
@@ -157,53 +132,16 @@ def get_title(curr_year, month_start, month_end):
 
 
 def user_input():
-    try:
-        y_in = input("year: ").strip()
-        year = int(y_in) if y_in else None
-
-        m_in = input("month: ").strip()
-        if m_in:
-            month = list(map(int, m_in.split()))
-        else:
-            month = None
-
-        # print(f" year={year}, month={month}")
-
-    except ValueError:
-        print("Enter integers for year and month")
-    return year, month
+    return input("year: "), input("month: ")
 
 
-def split_name(name):
-
-    parts = name.split()
-
-    foreign_pattern = r"[a-zA-Z\u3040-\u30FF\uAC00-\uD7AF]"
-
-    split_index = len(parts)
-
-    for i, part in enumerate(parts):
-        if re.search(foreign_pattern, part):
-            split_index = i
-            break
-
-    main_name = " ".join(parts[:split_index])
-    sub_name = " ".join(parts[split_index:])
-
-    return main_name, sub_name
-
-
-def extract(status):
-
-    curr_year, month_start, month_end = get_year_month()
-
-    print((curr_year, month_start, month_end))
+def read_draft_sheet(status, year):
 
     creds = load_service_account_credentials()
 
     service = build("sheets", "v4", credentials=creds)
     res = service.spreadsheets().get(spreadsheetId=read_id(status)).execute()
-    target_sheet_name = curr_year
+    target_sheet_name = year
     target_sheet = None
 
     for sheet in res["sheets"]:
@@ -232,38 +170,25 @@ def extract(status):
     )
 
     values = result.get("values", [])
+    if not values:
+        raise ValueError(f'Sheet "{target_sheet_name}" has no header row.')
+    return values[0], values[1:]
 
-    headers = [v.lower() for v in values[0]]
 
-    backup = []
-    movie_list = []
+def prompt_draft_period():
+    from services.draft_selection import DraftPeriod
 
-    for row in values[1:]:
-        row_dict = dict(zip(headers, row))
+    year_input, month_input = user_input()
+    return DraftPeriod.from_inputs(year_input, month_input)
 
-        name, subname = split_name(row_dict["name"])
-        row_dict["name"] = name
-        row_dict["subname"] = subname
 
-        # print(row_dict["date"].split("/")[0])
-        curr_month = int(row_dict["date"].split("/")[0])
+def extract(status, period=None):
+    from services.draft_selection import select_draft_movies
 
-        if month_start <= curr_month <= month_end:
-            movie_list.append(row_dict)
-
-        backup.append(row_dict)
-
-    if movie_list is []:
-        raise ValueError(f"No movie in month{month_start}-{month_end}!")
-
-    with open(f"configs/backup_{target_sheet_name}.json", "w", encoding="utf-8") as f:
-        json.dump(backup, f, indent=2, ensure_ascii=False)
-
-    # print("movie sheet updated")
-
-    title = get_title(curr_year, month_start, month_end)
-
-    return movie_list, title
+    period = period or prompt_draft_period()
+    print((period.year, period.month_start, period.month_end))
+    headers, rows = read_draft_sheet(status, period.year)
+    return select_draft_movies(headers, rows, period), period.title
 
 
 if __name__ == "__main__":

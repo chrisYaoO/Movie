@@ -4,3 +4,4 @@ __pycache__/
 /configs
 /images
 /templates/movie_wechat.html
+/outputs/movie_wechat.html

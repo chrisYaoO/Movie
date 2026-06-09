@@ -33,6 +33,7 @@ _Avoid_: Sheet row
 
 - A **Draft Run** produces exactly one **Preview**
 - The **Preview** is stored at `outputs/movie_wechat.html` and overwritten by each Draft Run
+- The source article template remains unchanged at `templates/movie_template.html`
 - A successful **Draft Run** creates exactly one WeChat draft
 - A **Draft Run** starts immediately after its inputs are collected, without a final confirmation gate
 - A **Draft Run** stops before draft creation if any poster upload fails
@@ -95,6 +96,7 @@ _Avoid_: Sheet row
 - "Explicit human confirmation" previously implied a final publication gate; resolved: a Draft Run executes immediately after input collection.
 - "Poster upload cache" was considered for failed reruns; resolved: no cache is needed for now.
 - "Preview history" was considered for traceability; resolved: keep one fixed Preview file and overwrite it on each Draft Run.
+- "Original HTML" means the source article template at `templates/movie_template.html`; resolved: Draft Runs never modify it.
 - "Google Sheets backup" previously described a local copy written during reads; resolved: remove it because the Draft Run does not modify Google Sheets.
 - "WeChat configuration source" previously mixed file-based values and hard-coded values; resolved: all WeChat configuration belongs in `configs/ids.json`.
 - "Required Draft Movie fields" excludes `quality`; `comment` must be present but may be empty.

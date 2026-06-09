@@ -51,6 +51,7 @@ Typical values used in the current code:
 
 - Google Sheets IDs
 - WeChat `AppID` / `AppSecret`
+- WeChat article defaults: `author`, `thumb_media_id`, and `source_url`
 - Local draft data file at `configs/data.json`
 - Google service account JSON file in `configs/`
 
@@ -88,7 +89,14 @@ Run the WeChat draft flow:
 python wechat.py
 ```
 
-The script will prompt for a digest, read movie data from Google Sheets, generate article HTML, upload images, and create a WeChat draft.
+The script prompts for Digest, year, and one or two months. Blank year/month
+inputs use the current year/month. It validates the selected rows, uploads all
+posters, writes the Preview to `outputs/movie_wechat.html`, and creates one
+WeChat draft.
+
+If a poster upload fails, no draft is created. Rerun the command to upload all
+posters again. If draft creation times out, the result is unknown: inspect the
+WeChat Official Account backend before rerunning to avoid creating a duplicate.
 
 ## Tests
 
@@ -118,10 +126,10 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Run wechat.py] --> B[Read movie records from Google Sheets]
+    A[Run wechat.py] --> B[Validate Draft Period and Draft Movies]
     B --> C[Fetch and process poster images]
     C --> D[Upload images to WeChat]
-    D --> E[Render article HTML from template]
+    D --> E[Write outputs/movie_wechat.html]
     E --> F[Create WeChat draft via API]
 ```
 

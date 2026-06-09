@@ -17,6 +17,8 @@ images to WeChat, renders article HTML, and creates one WeChat draft.
 - [x] Preserve the stable version on `main` and the baseline tag.
 - [x] Work only on `refactor/wechat-draft`.
 - [x] Establish characterization tests before changing workflow behavior.
+- [x] Do not execute any Git command without the user's explicit confirmation
+      for that action, including read-only Git commands.
 - [x] Keep every refactor stage independently reviewable and revertible.
 - [x] Run `python -m unittest discover -v` before every refactor commit.
 - [x] Do not call real Google Sheets, Douban, or WeChat APIs from automated tests.
@@ -32,6 +34,7 @@ images to WeChat, renders article HTML, and creates one WeChat draft.
 - [x] Do not cache poster uploads; reruns upload posters again from the beginning.
 - [x] Remove the local Google Sheets backup written during Draft Runs.
 - [x] Store the Preview at `outputs/movie_wechat.html` and overwrite it on each Draft Run.
+- [x] Preserve `templates/movie_template.html` as the unchanged source article template.
 - [x] Do not introduce run manifests.
 - [x] Invalid Draft Period input ends the Draft Run with a clear error; blank
       input may use current-year and current-month defaults.
@@ -52,72 +55,73 @@ images to WeChat, renders article HTML, and creates one WeChat draft.
 
 ## Phase 1: WeChat Client
 
-- [ ] Add characterization tests for access-token success and WeChat API errors.
-- [ ] Introduce one WeChat client module for token retrieval, image upload, and
+- [x] Add characterization tests for access-token success and WeChat API errors.
+- [x] Introduce one WeChat client module for token retrieval, image upload, and
       draft creation.
-- [ ] Reuse one access token across poster uploads and draft creation.
-- [ ] Move WeChat endpoint construction and response validation behind the
+- [x] Reuse one access token across poster uploads and draft creation.
+- [x] Move WeChat endpoint construction and response validation behind the
       client interface.
-- [ ] Move author, thumbnail media ID, and source URL out of hard-coded request
+- [x] Move author, thumbnail media ID, and source URL out of hard-coded request
       construction and into `configs/ids.json`.
-- [ ] Validate all required WeChat configuration before calling the WeChat API.
-- [ ] Add consistent request timeouts.
-- [ ] Distinguish definite WeChat API failures from unknown draft-creation timeout results.
-- [ ] Preserve the full WeChat business-error response for display.
-- [ ] Preserve the characterized draft request and return value.
-- [ ] Run the full test suite and commit.
+- [x] Validate all required WeChat configuration before calling the WeChat API.
+- [x] Add consistent request timeouts.
+- [x] Distinguish definite WeChat API failures from unknown draft-creation timeout results.
+- [x] Preserve the full WeChat business-error response for display.
+- [x] Preserve the characterized draft request and return value.
+- [x] Run the full test suite and commit.
 
 ## Phase 2: Draft Movie Selection
 
-- [ ] Add characterization tests for an empty month, missing headers, malformed
+- [x] Add characterization tests for an empty month, missing headers, malformed
       dates, and missing required movie fields.
-- [ ] Replace the current identity-based empty-list check with reliable empty-period validation.
-- [ ] Separate interactive period input from Google Sheets reading.
-- [ ] Introduce an explicit period value used by the draft workflow.
-- [ ] Preserve blank-input defaults while rejecting invalid Draft Period input.
-- [ ] Return validated draft movie records instead of loosely shaped dictionaries.
-- [ ] Include sheet row numbers in Draft Movie validation errors.
-- [ ] Preserve current title generation and title splitting unless a decision
+- [x] Replace the current identity-based empty-list check with reliable empty-period validation.
+- [x] Separate interactive period input from Google Sheets reading.
+- [x] Introduce an explicit period value used by the draft workflow.
+- [x] Preserve blank-input defaults while rejecting invalid Draft Period input.
+- [x] Return validated draft movie records instead of loosely shaped dictionaries.
+- [x] Include sheet row numbers in Draft Movie validation errors.
+- [x] Preserve current title generation and title splitting unless a decision
       explicitly changes them.
-- [ ] Preserve Google Sheets row order without sorting Draft Movies.
-- [ ] Remove backup-writing behavior from Draft Runs.
-- [ ] Run the full test suite and commit.
+- [x] Preserve Google Sheets row order without sorting Draft Movies.
+- [x] Remove backup-writing behavior from Draft Runs.
+- [x] Run the full test suite and commit.
 
 ## Phase 3: Draft Workflow
 
-- [ ] Add an end-to-end offline test covering selection, poster upload, rendering,
+- [x] Add an end-to-end offline test covering selection, poster upload, rendering,
       and draft creation through fake external adapters.
-- [ ] Introduce one workflow entry point that coordinates a complete draft run.
-- [ ] Make `wechat.py` responsible only for command input, workflow invocation,
+- [x] Introduce one workflow entry point that coordinates a complete draft run.
+- [x] Make `wechat.py` responsible only for command input, workflow invocation,
       and result display.
-- [ ] Preserve current empty Digest behavior behind a named rule.
-- [ ] Remove wildcard imports from the draft path.
-- [ ] Return a structured run result containing title, movie count, preview path,
+- [x] Preserve current empty Digest behavior behind a named rule.
+- [x] Remove wildcard imports from the draft path.
+- [x] Return a structured run result containing title, movie count, preview path,
       and WeChat draft media ID.
-- [ ] Run the full test suite and commit.
+- [x] Run the full test suite and commit.
 
 ## Phase 4: Recovery And Outputs
 
-- [ ] Stop before draft creation when any poster upload fails.
-- [ ] Store the Preview at `outputs/movie_wechat.html`.
-- [ ] Warn the user to inspect WeChat before rerunning after an unknown
+- [x] Stop before draft creation when any poster upload fails.
+- [x] Store the Preview at `outputs/movie_wechat.html`.
+- [x] Ensure Draft Runs never modify `templates/movie_template.html`.
+- [x] Warn the user to inspect WeChat before rerunning after an unknown
       draft-creation timeout result.
-- [ ] Run the full test suite and commit.
+- [x] Run the full test suite and commit.
 
 ## Phase 5: Validation And Cleanup
 
 - [ ] Review the complete branch diff against the stable baseline.
-- [ ] Run all automated tests.
-- [ ] Generate and inspect a Preview using test doubles without creating a real draft.
-- [ ] Run one complete Draft Run using real Google Sheets and WeChat APIs.
-- [ ] Confirm the Draft Run returns a WeChat `media_id`.
-- [ ] Confirm the draft exists in the WeChat Official Account backend.
-- [ ] Confirm the title, movie count, and Google Sheets row order are correct.
-- [ ] Confirm all posters display correctly.
-- [ ] Confirm directors, years, ratings, and comments are correct.
-- [ ] Confirm `outputs/movie_wechat.html` was generated.
-- [ ] Run all automated tests again after real validation.
+- [x] Run all automated tests.
+- [x] Generate and inspect a Preview using test doubles without creating a real draft.
+- [x] Run one complete Draft Run using real Google Sheets and WeChat APIs.
+- [x] Confirm the Draft Run returns a WeChat `media_id`.
+- [x] Confirm the draft exists in the WeChat Official Account backend.
+- [x] Confirm the title, movie count, and Google Sheets row order are correct.
+- [x] Confirm all posters display correctly.
+- [x] Confirm directors, years, ratings, and comments are correct.
+- [x] Confirm `outputs/movie_wechat.html` was generated.
+- [x] Run all automated tests again after real validation.
 - [ ] Confirm the stable baseline remains runnable.
 - [ ] Delete the unrelated Web App workflow in a separate commit.
-- [ ] Update README usage and recovery instructions.
+- [x] Update README usage and recovery instructions.
 - [ ] Merge only after final approval.
