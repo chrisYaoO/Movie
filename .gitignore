@@ -3,3 +3,5 @@ __pycache__/
 *.py[cod]
 /configs
 /outputs/movie_wechat.html
+/docs
+CONTEXT.md

@@ -10,7 +10,7 @@ def show_progress(message):
 
 def main():
     start = time.time()
-    digest = input("digest: ")
+    digest = input("Digest: ")
     try:
         period = prompt_draft_period()
         result = run_draft(period, digest, progress=show_progress)
