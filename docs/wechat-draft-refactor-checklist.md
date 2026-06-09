@@ -124,4 +124,4 @@ images to WeChat, renders article HTML, and creates one WeChat draft.
 - [x] Confirm the stable baseline remains runnable.
 - [x] Delete the unrelated Web App workflow in a separate commit.
 - [x] Update README usage and recovery instructions.
-- [ ] Merge only after final approval.
+- [x] Merge only after final approval.
