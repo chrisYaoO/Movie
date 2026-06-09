@@ -110,7 +110,7 @@ images to WeChat, renders article HTML, and creates one WeChat draft.
 
 ## Phase 5: Validation And Cleanup
 
-- [ ] Review the complete branch diff against the stable baseline.
+- [x] Review the complete branch diff against the stable baseline.
 - [x] Run all automated tests.
 - [x] Generate and inspect a Preview using test doubles without creating a real draft.
 - [x] Run one complete Draft Run using real Google Sheets and WeChat APIs.
@@ -121,7 +121,7 @@ images to WeChat, renders article HTML, and creates one WeChat draft.
 - [x] Confirm directors, years, ratings, and comments are correct.
 - [x] Confirm `outputs/movie_wechat.html` was generated.
 - [x] Run all automated tests again after real validation.
-- [ ] Confirm the stable baseline remains runnable.
+- [x] Confirm the stable baseline remains runnable.
 - [x] Delete the unrelated Web App workflow in a separate commit.
 - [x] Update README usage and recovery instructions.
 - [ ] Merge only after final approval.
