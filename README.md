@@ -25,6 +25,8 @@ flowchart LR
 ```text
 .
 |-- wechat.py                         # Command-line entry point
+|-- list_wechat_images.py             # List permanent image media IDs
+|-- run_wechat.command                # macOS launcher
 |-- run_wechat.vbs                    # Windows launcher
 |-- services/
 |   |-- draft_selection.py            # Period and movie validation
@@ -38,12 +40,40 @@ flowchart LR
 
 ## Setup
 
+Python 3.9 or newer is required.
+
+macOS/Linux:
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+Windows PowerShell:
+
 ```powershell
-python -m venv .venv
+py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Create `configs/ids.json`:
+Copy `configs.example.json` to `configs/ids.json`, then replace the
+placeholders with real values:
+
+macOS/Linux:
+
+```sh
+mkdir -p configs
+cp configs.example.json configs/ids.json
+```
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force configs
+Copy-Item configs.example.json configs/ids.json
+```
+
+`configs/ids.json`:
 
 ```json
 {
@@ -55,8 +85,20 @@ Create `configs/ids.json`:
   "source_url": "https://example.com"
 }
 ```
+
+- `movie`: Google Spreadsheet ID, taken from the spreadsheet URL.
+- `AppID` and `AppSecret`: WeChat Official Account credentials.
+- `author`: author name shown in the draft.
+- `thumb_media_id`: existing WeChat thumbnail material ID.
+- `source_url`: source link shown in the article.
+
+Do not commit `configs/ids.json` or the Google service account JSON; the whole
+`configs/` directory is ignored by Git.
 Google service account file can be obtained from [Google Developer Console](https://console.developers.google.com/).
-Place the Google service account file under `configs/`.
+Place it at
+`configs/movie-491021-22b25e7fe411.json`, or set
+`GOOGLE_SERVICE_ACCOUNT_FILE` to the actual file path. Relative paths are
+resolved from the project root.
 
 Optional overrides:
 
@@ -84,11 +126,42 @@ Each year uses a same-named sheet, such as `2026`.
 
 ## Run
 
-Double-click `run_wechat.vbs`, or run:
+macOS/Linux:
+
+```sh
+.venv/bin/python wechat.py
+```
+
+On macOS, double-click `run_wechat.command` to open Terminal and start the
+interactive run automatically.
+
+Windows PowerShell:
 
 ```powershell
 .\.venv\Scripts\python.exe wechat.py
 ```
+
+On Windows, you can also double-click `run_wechat.vbs`.
+
+To find a `thumb_media_id`, list the existing permanent image materials:
+
+macOS/Linux:
+
+```sh
+.venv/bin/python list_wechat_images.py
+.venv/bin/python list_wechat_images.py --match "部分图片 URL 或文件名"
+```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe list_wechat_images.py
+.\.venv\Scripts\python.exe list_wechat_images.py --match "部分图片 URL 或文件名"
+```
+
+Copy the matching `media_id` into `thumb_media_id` in `configs/ids.json`.
+The script queries permanent image materials and does not upload or modify
+anything.
 
 Example input:
 
@@ -114,6 +187,14 @@ Draft created: MEDIA_ID
 If draft creation times out, inspect the WeChat backend before rerunning because the result is unknown.
 
 ## Tests
+
+macOS/Linux:
+
+```sh
+.venv/bin/python -m unittest discover -v
+```
+
+Windows PowerShell:
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -v

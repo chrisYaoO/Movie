@@ -65,13 +65,23 @@ class DraftMovieSelectionTest(unittest.TestCase):
                 DraftPeriod("2026", 6, 6),
             )
 
-    def test_missing_required_movie_fields_include_sheet_row(self):
-        with self.assertRaisesRegex(ValueError, "Sheet row 2.*director"):
-            select_draft_movies(
-                self.headers,
-                [["6/1", "A", "", "2020", "5", "", "1", "2"]],
-                DraftPeriod("2026", 6, 6),
-            )
+    def test_missing_director_defaults_to_space(self):
+        movies = select_draft_movies(
+            self.headers,
+            [["6/1", "A", "", "2020", "5", "", "1", "2"]],
+            DraftPeriod("2026", 6, 6),
+        )
+
+        self.assertEqual(movies[0].director, " ")
+
+    def test_missing_director_header_defaults_to_space(self):
+        movies = select_draft_movies(
+            [header for header in self.headers if header != "director"],
+            [["6/1", "A", "2020", "5", "", "1", "2"]],
+            DraftPeriod("2026", 6, 6),
+        )
+
+        self.assertEqual(movies[0].director, " ")
 
     def test_comment_may_be_empty_and_quality_is_not_required(self):
         movies = select_draft_movies(
@@ -83,20 +93,21 @@ class DraftMovieSelectionTest(unittest.TestCase):
         self.assertEqual(movies[0].comment, "")
         self.assertEqual(movies[0].quality, "")
 
-    def test_selected_movies_preserve_sheet_order(self):
+    def test_selected_movies_sort_by_date_after_filtering_period(self):
         movies = select_draft_movies(
             self.headers,
             [
+                ["5/31", "Outside Period", "D", "2020", "5", "", "0", "0"],
                 ["6/2", "Second Date", "D", "2020", "5", "", "1", "2"],
                 ["6/1", "First Date", "D", "2020", "5", "", "3", "4"],
             ],
             DraftPeriod("2026", 6, 6),
         )
 
-        self.assertEqual([movie.movie_id for movie in movies], ["1", "3"])
+        self.assertEqual([movie.movie_id for movie in movies], ["3", "1"])
         self.assertEqual(
             [movie.subname for movie in movies],
-            ["Second Date", "First Date"],
+            ["First Date", "Second Date"],
         )
 
 

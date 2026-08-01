@@ -10,8 +10,16 @@ from services.wechat_client import WeChatClient, WeChatConfiguration
 from utils.google_sheets import read_draft_sheet
 
 
-DEFAULT_TEMPLATE_PATH = Path("templates/movie_template.html")
-DEFAULT_PREVIEW_PATH = Path("outputs/movie_wechat.html")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_TEMPLATE_PATH = PROJECT_ROOT / "templates" / "movie_template.html"
+DEFAULT_PREVIEW_PATH = PROJECT_ROOT / "outputs" / "movie_wechat.html"
+
+
+def display_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(PROJECT_ROOT))
+    except ValueError:
+        return str(path)
 
 
 def ignore_progress(message: str) -> None:
@@ -81,7 +89,7 @@ class DraftWorkflow:
             movie.image_url = self.client.upload_image(f"{movie.movie_id}.png", poster)
             self.progress(f"{prefix}: poster uploaded.")
 
-        self.progress(f"Writing Preview to {self.preview_path}...")
+        self.progress(f"Writing Preview to {display_path(self.preview_path)}...")
         html = self.renderer(movies, preview_path=self.preview_path)
         self.progress("Creating WeChat draft...")
         media_id = self.client.create_draft(html, normalize_digest(digest), period.title)

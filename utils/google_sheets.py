@@ -9,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_SERVICE_ACCOUNT_FILE = os.path.join(
     BASE_DIR,
     "configs",
-    "movie-491021-1cd922995007.json",
+    "movie-491021-22b25e7fe411.json",
 )
 DEFAULT_SPREADSHEET_IDS_FILE = os.path.join(BASE_DIR, "configs", "ids.json")
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -27,6 +27,8 @@ def load_service_account_credentials():
         "GOOGLE_SERVICE_ACCOUNT_FILE",
         DEFAULT_SERVICE_ACCOUNT_FILE,
     )
+    if not os.path.isabs(service_account_file):
+        service_account_file = os.path.join(BASE_DIR, service_account_file)
     return Credentials.from_service_account_file(service_account_file, scopes=SCOPES)
 
 

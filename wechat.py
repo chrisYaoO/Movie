@@ -17,6 +17,9 @@ def main():
     except ValueError as error:
         print(error)
         return
+    except FileNotFoundError as error:
+        print(f"Required configuration file not found: {error.filename or error}")
+        return
     except WeChatApiError as error:
         print(error.response)
         return

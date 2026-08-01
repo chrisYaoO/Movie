@@ -16,6 +16,15 @@ from services.wechat_client import (
 from utils.google_sheets import extract
 
 
+TEST_CONFIG = WeChatConfiguration(
+    app_id="app-id",
+    app_secret="app-secret",
+    author="看电影的",
+    thumb_media_id="thumb-id",
+    source_url="https://example.com",
+)
+
+
 class BuildHtmlCharacterizationTest(unittest.TestCase):
     def test_build_html_renders_movies_and_saves_preview(self):
         template = (
@@ -37,14 +46,12 @@ class BuildHtmlCharacterizationTest(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            original_cwd = os.getcwd()
-            try:
-                os.chdir(temp_dir)
-                html = build_html(movies)
-            finally:
-                os.chdir(original_cwd)
-
             preview = Path(temp_dir, "outputs", "movie_wechat.html")
+            html = build_html(
+                movies,
+                template_path=Path(templates_dir, "movie_template.html"),
+                preview_path=preview,
+            )
             self.assertEqual(
                 html,
                 "<h1>Movie A:https://mmbiz.qpic.cn/movie-a</h1>",
@@ -62,7 +69,13 @@ class WechatUploadCharacterizationTest(unittest.TestCase):
     ):
         post.return_value.json.return_value = {"media_id": "draft-media-id"}
 
-        media_id = upload_to_draft("<p>article</p>", "digest text", "Draft title")
+        with patch(
+            "services.wechat_service.WeChatConfiguration.load",
+            return_value=TEST_CONFIG,
+        ):
+            media_id = upload_to_draft(
+                "<p>article</p>", "digest text", "Draft title"
+            )
 
         self.assertEqual(media_id, "draft-media-id")
         get_access_token.assert_called_once_with()
@@ -140,7 +153,11 @@ class WechatUploadCharacterizationTest(unittest.TestCase):
             "url": "https://mmbiz.qpic.cn/movie-a"
         }
 
-        result = upload_images(movies)
+        with patch(
+            "services.wechat_service.WeChatConfiguration.load",
+            return_value=TEST_CONFIG,
+        ):
+            result = upload_images(movies)
 
         self.assertIs(result, movies)
         self.assertEqual(movies[0]["image_url"], "https://mmbiz.qpic.cn/movie-a")
@@ -200,6 +217,27 @@ class WeChatClientTest(unittest.TestCase):
 
         self.assertEqual(raised.exception.response, error)
         self.assertIn(str(error), str(raised.exception))
+
+    def test_list_materials_queries_permanent_image_page(self):
+        self.http.get.return_value.json.return_value = {
+            "access_token": "access-token"
+        }
+        materials = {
+            "total_count": 1,
+            "item_count": 1,
+            "item": [{"media_id": "cover-media-id"}],
+        }
+        self.http.post.return_value.json.return_value = materials
+
+        result = self.client.list_materials()
+
+        self.assertEqual(result, materials)
+        self.http.post.assert_called_once_with(
+            "https://api.weixin.qq.com/cgi-bin/material/batchget_material"
+            "?access_token=access-token",
+            json={"type": "image", "offset": 0, "count": 20},
+            timeout=20,
+        )
 
     def test_one_access_token_is_reused_for_image_and_draft_uploads(self):
         self.http.get.return_value.json.return_value = {

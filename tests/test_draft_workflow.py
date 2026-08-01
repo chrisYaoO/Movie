@@ -70,7 +70,7 @@ class DraftWorkflowTest(unittest.TestCase):
             self.assertEqual(result.media_id, "draft-media-id")
             self.assertEqual(
                 preview_path.read_text(encoding="utf-8"),
-                "1:https://mmbiz.qpic.cn/1.png;2:https://mmbiz.qpic.cn/2.png;",
+                "2:https://mmbiz.qpic.cn/2.png;1:https://mmbiz.qpic.cn/1.png;",
             )
             self.assertEqual(template_path.read_text(encoding="utf-8"), template_source)
 
@@ -108,10 +108,13 @@ class DraftWorkflowTest(unittest.TestCase):
 
         self.assertEqual(progress[0], "Reading Google Sheets for 2026 6月观影...")
         self.assertIn("Selected 2 movies.", progress)
-        self.assertIn("[1/2] Movie A: downloading poster...", progress)
-        self.assertIn("[1/2] Movie A: uploading poster to WeChat...", progress)
-        self.assertIn("[2/2] Movie B: poster uploaded.", progress)
-        self.assertIn("Writing Preview to outputs\\movie_wechat.html...", progress)
+        self.assertIn("[1/2] Movie B: downloading poster...", progress)
+        self.assertIn("[1/2] Movie B: uploading poster to WeChat...", progress)
+        self.assertIn("[2/2] Movie A: poster uploaded.", progress)
+        self.assertIn(
+            f"Writing Preview to {Path('outputs', 'movie_wechat.html')}...",
+            progress,
+        )
         self.assertIn("Creating WeChat draft...", progress)
         self.assertEqual(progress[-1], "Draft created: draft-media-id")
 

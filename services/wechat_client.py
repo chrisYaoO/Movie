@@ -6,7 +6,8 @@ from typing import Any, Mapping, Optional
 import requests
 
 
-DEFAULT_CONFIG_PATH = Path("configs/ids.json")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "ids.json"
 DEFAULT_TIMEOUT_SECONDS = 20
 API_BASE_URL = "https://api.weixin.qq.com/cgi-bin"
 
@@ -47,8 +48,16 @@ class WeChatConfiguration:
 
     @classmethod
     def load(cls, path: Path = DEFAULT_CONFIG_PATH) -> "WeChatConfiguration":
-        with path.open(encoding="utf-8") as file:
-            return cls.from_mapping(json.load(file))
+        try:
+            with path.open(encoding="utf-8") as file:
+                return cls.from_mapping(json.load(file))
+        except FileNotFoundError as error:
+            raise ValueError(
+                f"WeChat configuration file not found: {path}. "
+                "Create configs/ids.json first."
+            ) from error
+        except json.JSONDecodeError as error:
+            raise ValueError(f"Invalid JSON in WeChat configuration: {path}") from error
 
 
 class WeChatClient:
@@ -121,6 +130,25 @@ class WeChatClient:
                 "Draft creation timed out. Check WeChat before rerunning."
             ) from error
         return self._required_value(self._response_json(response), "media_id")
+
+    def list_materials(
+        self,
+        material_type: str = "image",
+        offset: int = 0,
+        count: int = 20,
+    ) -> Mapping[str, Any]:
+        if not 1 <= count <= 20:
+            raise ValueError("Material list count must be between 1 and 20.")
+
+        response = self.http.post(
+            self._authenticated_url("material/batchget_material"),
+            json={"type": material_type, "offset": offset, "count": count},
+            timeout=self.timeout_seconds,
+        )
+        result = self._response_json(response)
+        if "total_count" not in result or "item" not in result:
+            raise WeChatApiError(result)
+        return result
 
     def get_draft(self, media_id: str) -> Mapping[str, Any]:
         response = self.http.post(

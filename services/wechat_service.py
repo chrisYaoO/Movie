@@ -1,10 +1,24 @@
-from services.draft_workflow import render_preview
+from pathlib import Path
+
+from services.draft_workflow import (
+    DEFAULT_PREVIEW_PATH,
+    DEFAULT_TEMPLATE_PATH,
+    render_preview,
+)
 from services.poster_loader import load_poster
 from services.wechat_client import WeChatClient, WeChatConfiguration
 
 
-def build_html(movie_list):
-    wechat_html = render_preview(movie_list)
+def build_html(
+    movie_list,
+    template_path: Path = DEFAULT_TEMPLATE_PATH,
+    preview_path: Path = DEFAULT_PREVIEW_PATH,
+):
+    wechat_html = render_preview(
+        movie_list,
+        template_path=template_path,
+        preview_path=preview_path,
+    )
     print("html saved")
     return wechat_html
 
@@ -40,4 +54,3 @@ def _client_with_current_token():
         WeChatConfiguration.load(),
         access_token=get_access_token(),
     )
-

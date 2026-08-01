@@ -98,8 +98,11 @@ class DraftMovie:
         missing = [
             field_name
             for field_name in REQUIRED_DRAFT_MOVIE_FIELDS
-            if field_name not in row
-            or (field_name != "comment" and str(row[field_name]).strip() == "")
+            if field_name != "director"
+            and (
+                field_name not in row
+                or (field_name != "comment" and str(row[field_name]).strip() == "")
+            )
         ]
         if missing:
             raise ValueError(
@@ -107,13 +110,16 @@ class DraftMovie:
             )
 
         name, subname = split_name(str(row["name"]))
+        director = str(row.get("director", ""))
+        if not director.strip():
+            director = " "
         known = set(REQUIRED_DRAFT_MOVIE_FIELDS) | {"quality"}
         return cls(
             sheet_row=sheet_row,
             date=str(row["date"]),
             name=name,
             subname=subname,
-            director=str(row["director"]),
+            director=director,
             year=str(row["year"]),
             rating=str(row["rating"]),
             comment=str(row["comment"]),
@@ -139,7 +145,7 @@ def select_draft_movies(
     missing_headers = [
         field_name
         for field_name in REQUIRED_DRAFT_MOVIE_FIELDS
-        if field_name not in normalized_headers
+        if field_name != "director" and field_name not in normalized_headers
     ]
     if missing_headers:
         raise ValueError(
@@ -158,6 +164,7 @@ def select_draft_movies(
         if period.includes(month):
             selected.append(DraftMovie.from_row(row_values, sheet_row))
 
+    selected.sort(key=lambda movie: datetime.strptime(movie.date, "%m/%d"))
     if not selected:
         raise ValueError(
             f"No movies found for Draft Period {period.year} "
